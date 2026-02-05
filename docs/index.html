@@ -29,6 +29,10 @@
             background-color: #eee;
             cursor: default;
         }
+
+        .cell.mine {
+            background-color: #f88;
+        }
     </style>
 </head>
 
@@ -37,19 +41,58 @@
     <div id="board"></div>
 
     <script>
-        const board = document.getElementById("board");
         const SIZE = 9;
+        const MINES = 10;
 
-        // 盤面を作成
+        const board = document.getElementById("board");
+
+        // マスの情報を管理する配列
+        const cells = [];
+
+        // 地雷をランダム配置
+        function createMines() {
+            const minePositions = new Set();
+            while (minePositions.size < MINES) {
+                const pos = Math.floor(Math.random() * SIZE * SIZE);
+                minePositions.add(pos);
+            }
+            return minePositions;
+        }
+
+        const mines = createMines();
+
+        // 盤面生成
         for (let i = 0; i < SIZE * SIZE; i++) {
             const cell = document.createElement("div");
             cell.className = "cell";
 
+            const isMine = mines.has(i);
+
             cell.addEventListener("click", () => {
+                if (cell.classList.contains("open")) return;
+
                 cell.classList.add("open");
+
+                if (isMine) {
+                    cell.textContent = "💣";
+                    cell.classList.add("mine");
+                    alert("ゲームオーバー！");
+                    revealMines();
+                }
             });
 
+            cells.push({ element: cell, isMine });
             board.appendChild(cell);
+        }
+
+        // 全地雷を表示
+        function revealMines() {
+            cells.forEach((cellData, index) => {
+                if (cellData.isMine) {
+                    cellData.element.textContent = "💣";
+                    cellData.element.classList.add("open", "mine");
+                }
+            });
         }
     </script>
 </body>
