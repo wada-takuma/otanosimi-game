@@ -47,6 +47,7 @@
 
         const board = document.getElementById("board");
         const cells = [];
+        let gameOver = false;
 
         // 地雷配置
         function createMines() {
@@ -59,7 +60,7 @@
 
         const mines = createMines();
 
-        // 周囲の地雷数を数える
+        // 周囲の地雷数
         function countAdjacentMines(index) {
             const x = index % SIZE;
             const y = Math.floor(index / SIZE);
@@ -68,10 +69,8 @@
             for (let dy = -1; dy <= 1; dy++) {
                 for (let dx = -1; dx <= 1; dx++) {
                     if (dx === 0 && dy === 0) continue;
-
                     const nx = x + dx;
                     const ny = y + dy;
-
                     if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
                         const nIndex = ny * SIZE + nx;
                         if (cells[nIndex].isMine) count++;
@@ -90,6 +89,7 @@
             cells.push({ element: cell, isMine, opened: false });
 
             cell.addEventListener("click", () => {
+                if (gameOver) return;
                 openCell(i);
             });
 
@@ -108,33 +108,44 @@
             if (cellData.isMine) {
                 cell.textContent = "💣";
                 cell.classList.add("mine");
-                alert("ゲームオーバー！");
+                gameOver = true;
                 revealMines();
+                alert("ゲームオーバー！");
                 return;
             }
 
             const count = countAdjacentMines(index);
             if (count > 0) {
                 cell.textContent = count;
-                return;
-            }
+            } else {
+                const x = index % SIZE;
+                const y = Math.floor(index / SIZE);
 
-            // 周囲に地雷がない場合 → 連鎖オープン
-            const x = index % SIZE;
-            const y = Math.floor(index / SIZE);
-
-            for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                    const nx = x + dx;
-                    const ny = y + dy;
-
-                    if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
-                        const nIndex = ny * SIZE + nx;
-                        if (!cells[nIndex].opened) {
-                            openCell(nIndex);
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
+                            const nIndex = ny * SIZE + nx;
+                            if (!cells[nIndex].opened) {
+                                openCell(nIndex);
+                            }
                         }
                     }
                 }
+            }
+
+            checkClear();
+        }
+
+        // クリア判定
+        function checkClear() {
+            const openedCount = cells.filter(c => c.opened).length;
+            const totalSafeCells = SIZE * SIZE - MINES;
+
+            if (openedCount === totalSafeCells) {
+                gameOver = true;
+                alert("🎉 クリア！おめでとう！");
             }
         }
 
