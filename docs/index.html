@@ -49,7 +49,6 @@
         const cells = [];
         let gameOver = false;
 
-        // 地雷配置
         function createMines() {
             const set = new Set();
             while (set.size < MINES) {
@@ -60,7 +59,6 @@
 
         const mines = createMines();
 
-        // 周囲の地雷数
         function countAdjacentMines(index) {
             const x = index % SIZE;
             const y = Math.floor(index / SIZE);
@@ -86,22 +84,44 @@
             cell.className = "cell";
 
             const isMine = mines.has(i);
-            cells.push({ element: cell, isMine, opened: false });
+            cells.push({
+                element: cell,
+                isMine,
+                opened: false,
+                flagged: false
+            });
 
+            // 左クリック
             cell.addEventListener("click", () => {
                 if (gameOver) return;
+                if (cells[i].flagged) return;
                 openCell(i);
+            });
+
+            // 右クリック（旗）
+            cell.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+                if (gameOver) return;
+                toggleFlag(i);
             });
 
             board.appendChild(cell);
         }
 
-        // マスを開く（連鎖対応）
+        function toggleFlag(index) {
+            const cellData = cells[index];
+            if (cellData.opened) return;
+
+            cellData.flagged = !cellData.flagged;
+            cellData.element.textContent = cellData.flagged ? "🚩" : "";
+        }
+
         function openCell(index) {
             const cellData = cells[index];
             const cell = cellData.element;
 
             if (cellData.opened) return;
+
             cellData.opened = true;
             cell.classList.add("open");
 
@@ -138,12 +158,9 @@
             checkClear();
         }
 
-        // クリア判定
         function checkClear() {
             const openedCount = cells.filter(c => c.opened).length;
-            const totalSafeCells = SIZE * SIZE - MINES;
-
-            if (openedCount === totalSafeCells) {
+            if (openedCount === SIZE * SIZE - MINES) {
                 gameOver = true;
                 alert("🎉 クリア！おめでとう！");
             }
