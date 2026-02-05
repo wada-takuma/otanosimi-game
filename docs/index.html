@@ -8,6 +8,10 @@
             font-family: sans-serif;
         }
 
+        #controls {
+            margin-bottom: 10px;
+        }
+
         #board {
             display: grid;
             grid-template-columns: repeat(9, 30px);
@@ -39,6 +43,11 @@
 
 <body>
     <h1>マインスイーパー</h1>
+
+    <div id="controls">
+        <button id="resetBtn">リセット</button>
+    </div>
+
     <div id="board"></div>
 
     <script>
@@ -46,8 +55,49 @@
         const MINES = 10;
 
         const board = document.getElementById("board");
-        const cells = [];
+        const resetBtn = document.getElementById("resetBtn");
+
+        let cells = [];
         let gameOver = false;
+
+        resetBtn.addEventListener("click", initGame);
+
+        initGame();
+
+        function initGame() {
+            board.innerHTML = "";
+            cells = [];
+            gameOver = false;
+
+            const mines = createMines();
+
+            for (let i = 0; i < SIZE * SIZE; i++) {
+                const cell = document.createElement("div");
+                cell.className = "cell";
+
+                const isMine = mines.has(i);
+                cells.push({
+                    element: cell,
+                    isMine,
+                    opened: false,
+                    flagged: false
+                });
+
+                cell.addEventListener("click", () => {
+                    if (gameOver) return;
+                    if (cells[i].flagged) return;
+                    openCell(i);
+                });
+
+                cell.addEventListener("contextmenu", (e) => {
+                    e.preventDefault();
+                    if (gameOver) return;
+                    toggleFlag(i);
+                });
+
+                board.appendChild(cell);
+            }
+        }
 
         function createMines() {
             const set = new Set();
@@ -56,8 +106,6 @@
             }
             return set;
         }
-
-        const mines = createMines();
 
         function countAdjacentMines(index) {
             const x = index % SIZE;
@@ -76,36 +124,6 @@
                 }
             }
             return count;
-        }
-
-        // 盤面生成
-        for (let i = 0; i < SIZE * SIZE; i++) {
-            const cell = document.createElement("div");
-            cell.className = "cell";
-
-            const isMine = mines.has(i);
-            cells.push({
-                element: cell,
-                isMine,
-                opened: false,
-                flagged: false
-            });
-
-            // 左クリック
-            cell.addEventListener("click", () => {
-                if (gameOver) return;
-                if (cells[i].flagged) return;
-                openCell(i);
-            });
-
-            // 右クリック（旗）
-            cell.addEventListener("contextmenu", (e) => {
-                e.preventDefault();
-                if (gameOver) return;
-                toggleFlag(i);
-            });
-
-            board.appendChild(cell);
         }
 
         function toggleFlag(index) {
