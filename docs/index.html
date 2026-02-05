@@ -23,6 +23,7 @@
             line-height: 30px;
             cursor: pointer;
             user-select: none;
+            font-weight: bold;
         }
 
         .cell.open {
@@ -45,21 +46,40 @@
         const MINES = 10;
 
         const board = document.getElementById("board");
-
-        // マスの情報を管理する配列
         const cells = [];
 
-        // 地雷をランダム配置
+        // 地雷配置
         function createMines() {
-            const minePositions = new Set();
-            while (minePositions.size < MINES) {
-                const pos = Math.floor(Math.random() * SIZE * SIZE);
-                minePositions.add(pos);
+            const set = new Set();
+            while (set.size < MINES) {
+                set.add(Math.floor(Math.random() * SIZE * SIZE));
             }
-            return minePositions;
+            return set;
         }
 
         const mines = createMines();
+
+        // 周囲の地雷数を数える
+        function countAdjacentMines(index) {
+            const x = index % SIZE;
+            const y = Math.floor(index / SIZE);
+            let count = 0;
+
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+
+                    const nx = x + dx;
+                    const ny = y + dy;
+
+                    if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
+                        const nIndex = ny * SIZE + nx;
+                        if (cells[nIndex].isMine) count++;
+                    }
+                }
+            }
+            return count;
+        }
 
         // 盤面生成
         for (let i = 0; i < SIZE * SIZE; i++) {
@@ -67,30 +87,43 @@
             cell.className = "cell";
 
             const isMine = mines.has(i);
+            cells.push({ element: cell, isMine, opened: false });
 
             cell.addEventListener("click", () => {
-                if (cell.classList.contains("open")) return;
-
-                cell.classList.add("open");
-
-                if (isMine) {
-                    cell.textContent = "💣";
-                    cell.classList.add("mine");
-                    alert("ゲームオーバー！");
-                    revealMines();
-                }
+                if (cells[i].opened) return;
+                openCell(i);
             });
 
-            cells.push({ element: cell, isMine });
             board.appendChild(cell);
         }
 
-        // 全地雷を表示
+        function openCell(index) {
+            const cellData = cells[index];
+            const cell = cellData.element;
+
+            if (cellData.opened) return;
+            cellData.opened = true;
+            cell.classList.add("open");
+
+            if (cellData.isMine) {
+                cell.textContent = "💣";
+                cell.classList.add("mine");
+                alert("ゲームオーバー！");
+                revealMines();
+                return;
+            }
+
+            const count = countAdjacentMines(index);
+            if (count > 0) {
+                cell.textContent = count;
+            }
+        }
+
         function revealMines() {
-            cells.forEach((cellData, index) => {
-                if (cellData.isMine) {
-                    cellData.element.textContent = "💣";
-                    cellData.element.classList.add("open", "mine");
+            cells.forEach(c => {
+                if (c.isMine) {
+                    c.element.textContent = "💣";
+                    c.element.classList.add("open", "mine");
                 }
             });
         }
