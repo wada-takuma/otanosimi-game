@@ -90,13 +90,13 @@
             cells.push({ element: cell, isMine, opened: false });
 
             cell.addEventListener("click", () => {
-                if (cells[i].opened) return;
                 openCell(i);
             });
 
             board.appendChild(cell);
         }
 
+        // マスを開く（連鎖対応）
         function openCell(index) {
             const cellData = cells[index];
             const cell = cellData.element;
@@ -116,6 +116,25 @@
             const count = countAdjacentMines(index);
             if (count > 0) {
                 cell.textContent = count;
+                return;
+            }
+
+            // 周囲に地雷がない場合 → 連鎖オープン
+            const x = index % SIZE;
+            const y = Math.floor(index / SIZE);
+
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const nx = x + dx;
+                    const ny = y + dy;
+
+                    if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
+                        const nIndex = ny * SIZE + nx;
+                        if (!cells[nIndex].opened) {
+                            openCell(nIndex);
+                        }
+                    }
+                }
             }
         }
 
