@@ -14,17 +14,16 @@
 
         #board {
             display: grid;
-            grid-template-columns: repeat(9, 30px);
             gap: 2px;
         }
 
         .cell {
-            width: 30px;
-            height: 30px;
+            width: 28px;
+            height: 28px;
             background-color: #ccc;
             border: 1px solid #999;
             text-align: center;
-            line-height: 30px;
+            line-height: 28px;
             cursor: pointer;
             user-select: none;
             font-weight: bold;
@@ -38,84 +37,93 @@
         .cell.mine {
             background-color: #f88;
         }
-        details {
-    margin-bottom: 12px;
-}
 
-summary {
-    cursor: pointer;
-    font-weight: bold;
-}
+        details {
+            margin-bottom: 12px;
+        }
+
+        summary {
+            cursor: pointer;
+            font-weight: bold;
+        }
     </style>
 </head>
 
 <body>
     <h1>マインスイーパー</h1>
+
+    <!-- ルール（折りたたみ） -->
     <details>
-    <summary>▶ ルールを見る</summary>
+        <summary>▶ ルールを見る</summary>
+        <p>
+            左クリックでマスを開きます。<br>
+            右クリックで旗（🚩）を立てられます。<br>
+            数字は周囲8マスの地雷数を表します。<br>
+            地雷を踏むとゲームオーバーです。<br>
+            地雷以外をすべて開くとクリアです。
+        </p>
+    </details>
 
-    <div style="margin-top: 8px;">
-        <p><strong>🎮 目的</strong><br>
-        地雷（💣）を踏まないように、地雷以外のすべてのマスを開きます。</p>
-
-        <p><strong>🖱 操作方法</strong><br>
-        ・左クリック：マスを開く<br>
-        ・右クリック：旗（🚩）を立てる／外す</p>
-
-        <p><strong>🔢 数字の意味</strong><br>
-        数字は周囲8マスにある地雷の数を表します。</p>
-
-        <p><strong>💣 ゲームオーバー</strong><br>
-        地雷を開くとゲームオーバーです。</p>
-
-        <p><strong>🎉 クリア条件</strong><br>
-        地雷以外のすべてのマスを開くとクリアです。</p>
-    </div>
-</details>
-
-
+    <!-- 操作パネル -->
     <div id="controls">
+        難易度：
+        <select id="difficulty">
+            <option value="easy">初級</option>
+            <option value="medium">中級</option>
+            <option value="hard">上級</option>
+        </select>
         <button id="resetBtn">リセット</button>
     </div>
 
     <div id="board"></div>
 
     <script>
-        const SIZE = 9;
-        const MINES = 10;
+        const DIFFICULTY_SETTINGS = {
+            easy:   { sizeX: 9,  sizeY: 9,  mines: 10 },
+            medium: { sizeX: 16, sizeY: 16, mines: 40 },
+            hard:   { sizeX: 30, sizeY: 16, mines: 99 }
+        };
 
         const board = document.getElementById("board");
         const resetBtn = document.getElementById("resetBtn");
+        const difficultySelect = document.getElementById("difficulty");
 
+        let SIZE_X, SIZE_Y, MINES;
         let cells = [];
         let gameOver = false;
 
         resetBtn.addEventListener("click", initGame);
+        difficultySelect.addEventListener("change", initGame);
 
         initGame();
 
         function initGame() {
+            const diff = DIFFICULTY_SETTINGS[difficultySelect.value];
+            SIZE_X = diff.sizeX;
+            SIZE_Y = diff.sizeY;
+            MINES = diff.mines;
+
             board.innerHTML = "";
+            board.style.gridTemplateColumns = `repeat(${SIZE_X}, 28px)`;
+
             cells = [];
             gameOver = false;
 
             const mines = createMines();
 
-            for (let i = 0; i < SIZE * SIZE; i++) {
+            for (let i = 0; i < SIZE_X * SIZE_Y; i++) {
                 const cell = document.createElement("div");
                 cell.className = "cell";
 
-                const isMine = mines.has(i);
                 cells.push({
                     element: cell,
-                    isMine,
+                    isMine: mines.has(i),
                     opened: false,
                     flagged: false
                 });
 
                 cell.addEventListener("click", () => {
-                    if (gameOver) return;
-                    if (cells[i].flagged) return;
+                    if (gameOver || cells[i].flagged) return;
                     openCell(i);
                 });
 
@@ -132,14 +140,14 @@ summary {
         function createMines() {
             const set = new Set();
             while (set.size < MINES) {
-                set.add(Math.floor(Math.random() * SIZE * SIZE));
+                set.add(Math.floor(Math.random() * SIZE_X * SIZE_Y));
             }
             return set;
         }
 
         function countAdjacentMines(index) {
-            const x = index % SIZE;
-            const y = Math.floor(index / SIZE);
+            const x = index % SIZE_X;
+            const y = Math.floor(index / SIZE_X);
             let count = 0;
 
             for (let dy = -1; dy <= 1; dy++) {
@@ -147,9 +155,9 @@ summary {
                     if (dx === 0 && dy === 0) continue;
                     const nx = x + dx;
                     const ny = y + dy;
-                    if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
-                        const nIndex = ny * SIZE + nx;
-                        if (cells[nIndex].isMine) count++;
+                    if (nx >= 0 && nx < SIZE_X && ny >= 0 && ny < SIZE_Y) {
+                        const ni = ny * SIZE_X + nx;
+                        if (cells[ni].isMine) count++;
                     }
                 }
             }
@@ -157,25 +165,22 @@ summary {
         }
 
         function toggleFlag(index) {
-            const cellData = cells[index];
-            if (cellData.opened) return;
-
-            cellData.flagged = !cellData.flagged;
-            cellData.element.textContent = cellData.flagged ? "🚩" : "";
+            const c = cells[index];
+            if (c.opened) return;
+            c.flagged = !c.flagged;
+            c.element.textContent = c.flagged ? "🚩" : "";
         }
 
         function openCell(index) {
-            const cellData = cells[index];
-            const cell = cellData.element;
+            const c = cells[index];
+            if (c.opened) return;
 
-            if (cellData.opened) return;
+            c.opened = true;
+            c.element.classList.add("open");
 
-            cellData.opened = true;
-            cell.classList.add("open");
-
-            if (cellData.isMine) {
-                cell.textContent = "💣";
-                cell.classList.add("mine");
+            if (c.isMine) {
+                c.element.textContent = "💣";
+                c.element.classList.add("mine");
                 gameOver = true;
                 revealMines();
                 alert("ゲームオーバー！");
@@ -184,20 +189,17 @@ summary {
 
             const count = countAdjacentMines(index);
             if (count > 0) {
-                cell.textContent = count;
+                c.element.textContent = count;
             } else {
-                const x = index % SIZE;
-                const y = Math.floor(index / SIZE);
+                const x = index % SIZE_X;
+                const y = Math.floor(index / SIZE_X);
 
                 for (let dy = -1; dy <= 1; dy++) {
                     for (let dx = -1; dx <= 1; dx++) {
                         const nx = x + dx;
                         const ny = y + dy;
-                        if (nx >= 0 && nx < SIZE && ny >= 0 && ny < SIZE) {
-                            const nIndex = ny * SIZE + nx;
-                            if (!cells[nIndex].opened) {
-                                openCell(nIndex);
-                            }
+                        if (nx >= 0 && nx < SIZE_X && ny >= 0 && ny < SIZE_Y) {
+                            openCell(ny * SIZE_X + nx);
                         }
                     }
                 }
@@ -208,9 +210,9 @@ summary {
 
         function checkClear() {
             const openedCount = cells.filter(c => c.opened).length;
-            if (openedCount === SIZE * SIZE - MINES) {
+            if (openedCount === SIZE_X * SIZE_Y - MINES) {
                 gameOver = true;
-                alert("🎉 クリア！おめでとう！");
+                alert("🎉 クリア！");
             }
         }
 
