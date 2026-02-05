@@ -1,13 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>サンプルドキュメント</title>
+    <title>マインスイーパー</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(9, 30px);
+            gap: 2px;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            background-color: #ccc;
+            border: 1px solid #999;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .cell.open {
+            background-color: #eee;
+            cursor: default;
+        }
+    </style>
 </head>
 
 <body>
-    Hello, GitHub pages!
-</body>
+    <h1>マインスイーパー</h1>
+    <div id="board"></div>
 
+    <script>
+        const board = document.getElementById("board");
+        const SIZE = 9;
+
+        // 盤面を作成
+        for (let i = 0; i < SIZE * SIZE; i++) {
+            const cell = document.createElement("div");
+            cell.className = "cell";
+
+            cell.addEventListener("click", () => {
+                cell.classList.add("open");
+            });
+
+            board.appendChild(cell);
+        }
+    </script>
+</body>
 </html>
